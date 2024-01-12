@@ -1,6 +1,6 @@
 {
   "name": "ccisd-skyward",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "main": "dist/main.js",
   "author": "Nick",
   "repository": {
