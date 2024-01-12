@@ -1,0 +1,8 @@
+{
+  "extends": "@sapphire/ts-config/extra-strict",
+  "compilerOptions": {
+    "outDir": "dist",
+    "target": "ES2022",
+    "module": "ES2022",
+  }
+}

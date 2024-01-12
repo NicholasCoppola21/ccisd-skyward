@@ -1,0 +1,1 @@
+This package does not store any user credentials and they are removed from memory soon after login. The session information is stored until the program terminates; however the validitiy of the session tokens are only valid for less then an hour. You can revoke session tokens by logging in on another device.

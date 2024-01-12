@@ -1,0 +1,17 @@
+// Logs into a skyward account using a .env file in the root directory.
+// See README.md and .env.example for details.
+// Requires dotenv OR you can pass it in directly with `SKYWARD_EMAIL=email SKYWARD_PASSWORD=password yarn start examples/login.js`
+import "dotenv/config";
+import SkywardAccountManager from "../SkywardAccountManager.js";
+
+const email = process.env.SKYWARD_EMAIL;
+const password = process.env.SKYWARD_PASSWORD;
+
+if (!email || !password) {
+  console.log("Enviroment variables are not setup properly!");
+  process.exit();
+}
+
+const account = new SkywardAccountManager(true); // Sets debug to true
+
+console.log(await account.login(email, password)); // Logs AuthObject or error
