@@ -1,4 +1,4 @@
-import { ShortCode } from "./GradeBookManager";
+import { ShortCode } from "./GradeBookManager.js";
 
 export interface TermGrade {
   term: ShortCode;

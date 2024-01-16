@@ -225,8 +225,7 @@ export default class GradeBookManager {
    * If FIN has a grade then it is finished.
    * If there is no shortcode, then it was a final exam for the semester.
    * If there is no grade, then it is a blank spot (Blanks needed for identifying the end of classes)
-   * Order by group: gID ShortCode Grade (both optional)
-   * Exs. ` gID P1 100`, `S1`, `FIN`, `Q1 100`, `P7 500`
+   * Order by group: gID (unique class code to link it to assignments) ShortCode Grade (last two can be optional)
    *
    * Examples of how to apply these regexs above
    */

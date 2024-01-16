@@ -171,6 +171,123 @@ export default class SkywardAccountManager {
     return new GradeBookManager(gradeBookRaw, this.debug);
   }
 
+  public async pullAttendance(): Promise<
+    | {
+        date: Date;
+        reason: string;
+        periods: string;
+        classes: string[];
+      }[]
+    | SkywardError
+  > {
+    if (!this.cookie || !this.encses || !this.sessionId)
+      return SkywardError.NOT_LOGGED_IN;
+    const result = await request(
+      "https://skyward-ccisdprod.iscorp.com/scripts/wsisa.dll/WService=wseduclearcreektx/sfattendance001.w",
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.5",
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Upgrade-Insecure-Requests": "1",
+          "Sec-Fetch-Dest": "document",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Site": "same-origin",
+          "Sec-Fetch-User": "?1",
+          Cookie: this.cookie,
+          referrer:
+            "https://skyward-ccisdprod.iscorp.com/scripts/wsisa.dll/WService=wseduclearcreektx/sfhome01.w",
+        },
+
+        body: `sessionid=${encodeURIComponent(this.sessionId!)}&encses=${
+          this.encses
+        }`,
+        method: "POST",
+      },
+    );
+
+    const text = await result.body.text();
+
+    const attendance: {
+      id: string;
+      date: Date;
+      periods: string;
+      reason: string;
+      classes: string[];
+    }[] = [];
+
+    // STEP 1: Parse out all absent dates, reasons, and periods.
+    let copy = text;
+
+    while (true) {
+      const args = SkywardAccountManager.MAIN_attendance_REGEX.exec(copy);
+
+      if (args) {
+        copy = copy.slice(args.index + args[0].length);
+        const [date, reason, periods, id, classes] = args.slice(1);
+        if (classes === "View Classes") {
+          attendance.push({
+            classes: [],
+            date: new Date(date),
+            id,
+            periods,
+            reason,
+          });
+        } else {
+          attendance.push({
+            classes: [classes],
+            date: new Date(date),
+            id,
+            periods,
+            reason,
+          });
+        }
+      } else {
+        break;
+      }
+    }
+
+    // STEP 2: Parse out all class HTML blocks
+
+    copy = text;
+
+    while (true) {
+      const args = SkywardAccountManager.attendance_CLASSES_ID.exec(copy);
+
+      if (args) {
+        copy = copy.slice(args.index + args[0].length);
+        const [id] = args.slice(1);
+
+        let copy1 = args[0];
+        console.log(copy1);
+
+        while (true) {
+          const args1 =
+            SkywardAccountManager.INNER_attendance_CLASSES_REGEX.exec(copy1);
+
+          if (args1) {
+            copy1 = copy1.slice(args1.index + args1[0].length);
+            attendance.find((s) => s.id === id)?.classes.push(args1[1]);
+          } else {
+            break;
+          }
+        }
+      } else {
+        break;
+      }
+    }
+
+    return attendance.map(({ classes, date, periods, reason }) => ({
+      classes,
+      date,
+      periods,
+      reason,
+    }));
+  }
+
   /**
    * Pulls the hAnon (hidden value sent on each HTML page to track you across requests)
    * @returns hAnon Text
@@ -265,6 +382,29 @@ export default class SkywardAccountManager {
   private log(message: unknown) {
     if (this.debug) console.log(message);
   }
+
+  /**
+   * Finds all absenses in the groups:
+   * Date | Reason | Period | Unique ID (For pulling classes)
+   * Pull classes using the 2nd (and then 3rd) regexes below
+   */
+  private static MAIN_attendance_REGEX =
+    /<tr class="(?:odd|even)"><td scope="row" style="white-space:nowrap">([^<]+)<\/td><td>([^<]+)<\/td><td style="white-space:nowrap">([^<]+)<\/td><td><a id='(\w+)' name='\w+' (?:style='white-space:nowrap' )?href="javascript:void\(0\)" >([^<]+)</;
+
+  /**
+   * Finds the classes block by ID in the groups:
+   * ID
+   *
+   * Use the INNER_attendance_CLASSES_REGEX to find the classes.
+   */
+  private static attendance_CLASSES_ID =
+    /(?:<a id=\\\w+\\u0027 name=\\\w+\\u0027 href=\\u0022javascript:void\(0\)\\u0022 >[^<]+<\/a>(?:<br \/>)?)+[^#]+#(\w+)/;
+
+  /**
+   * Finds classes from a class block
+   */
+  private static INNER_attendance_CLASSES_REGEX =
+    /<a id=\\\w+\\u0027 name=\\\w+\\u0027 href=\\u0022javascript:void\(0\)\\u0022 >([^<]+)<\/a>/;
 
   public static isError(val: unknown | SkywardError): val is SkywardError {
     return Object.values(SkywardError).includes(val as SkywardError);
