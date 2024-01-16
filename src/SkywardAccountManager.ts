@@ -262,7 +262,6 @@ export default class SkywardAccountManager {
         const [id] = args.slice(1);
 
         let copy1 = args[0];
-        console.log(copy1);
 
         while (true) {
           const args1 =
