@@ -1,39 +1,35 @@
-export interface Class {
-  name: string;
-  teacher: string;
-  period: number;
-  timeRange: string;
+// import type SkywardAccountManager from "./SkywardAccountManager.js";
+import Class from "./SkywardClass.js";
+
+/**
+ * Every Short Code that can be produced by a gradeset
+ * Can be converted to longcode by calling the static method GradeBookManager#shortToLong
+ */
+export enum ShortCode {
+  "P1" = "P1",
+  "P2" = "P2",
+  "Q1" = "Q1",
+  "P3" = "P3",
+  "P4" = "P4",
+  "Q2" = "Q2",
+  "SE1" = "SE1",
+  "S1" = "S1",
+  "P5" = "P5",
+  "P6" = "P6",
+  "Q3" = "Q3",
+  "P7" = "P7",
+  "P8" = "P8",
+  "Q4" = "Q4",
+  "SE2" = "SE2",
+  "S2" = "S2",
+  "FIN" = "FIN",
 }
 
+/**
+ * Manages, parses, and abstracts your gradebook into Classes.
+ */
 export default class GradeBookManager {
-  /**
-   * Stores all of your classes by name
-   */
-  public readonly classDetails = new Map<string, Class>();
-
-  /**
-   * Stores just class names for ease of use
-   */
-  public readonly classNames: string[] = [];
-
-  /**
-   * Stores grades by class name, contains blanks denoted by N/A
-   */
-  public readonly classGrades = new Map<
-    string,
-    { code: string; grade: string }[]
-  >();
-
-  /**
-   * Stores grades directly pulled from tables within the HTML.
-   * This list will list all of the grades for each term for each class (Every grade in a column for a class and then the next class)
-    Format: `"ShortCode Grade". Both can be missing. See regex at the bottom for details.
-  */
-  //   private rawGrades: string[];
-
-  /**
-   * Pulls the class name, period, time, and then name (in that order) from the HTML.
-   */
+  public classes = new Map<string, Class>();
 
   /**
    * Parses data from Skyward's gradebook HTML page for ease of use
@@ -43,10 +39,10 @@ export default class GradeBookManager {
     rawText: string,
     private debug?: boolean,
   ) {
-    this.log(`Obtained ${this.getAllClassMatches(rawText)} classes`);
-    this.log(`Obtained ${this.getAllGrades(rawText)} grades`);
-    this.log(this.classDetails);
-    this.log(this.classGrades);
+    this.log(`Obtained ${this.stage1(rawText)} classes`);
+    this.log(`Obtained ${this.stage2(rawText)} term grades`);
+    this.log(`Obtained ${this.stage3(rawText)} assignments`);
+    this.log(this.classes);
   }
 
   /**
@@ -54,7 +50,7 @@ export default class GradeBookManager {
    * @param text - Copy of raw HTML.
    * @returns The number of classes that it obtained.
    */
-  private getAllClassMatches(text: string): number {
+  private stage1(text: string): number {
     let n = 0;
 
     // remove match and rerun scan
@@ -63,20 +59,12 @@ export default class GradeBookManager {
 
       if (args) {
         const [name, period, time, teacher] = [...args.slice(1)];
-        this.classDetails.set(name, {
-          name,
-          period: Number(period),
-          teacher,
-          timeRange: time,
-        });
-        this.classNames.push(name);
-
+        this.classes.set(name, new Class(name, Number(period), time, teacher));
         text = text.slice(args.index + args[0].length);
         n++;
       } else break;
     }
     this.log(`Found ${n} classes!`);
-    this.log([...this.classDetails.values()]);
     return n;
   }
 
@@ -86,7 +74,7 @@ export default class GradeBookManager {
    * @param text - Copy of raw HTML.
    * @returns The number of grades that it obtained
    */
-  private getAllGrades(text: string): number {
+  private stage2(text: string): number {
     let n = 0;
 
     let curClass = 0;
@@ -97,50 +85,60 @@ export default class GradeBookManager {
       const args = GradeBookManager.GRADE_REGEX.exec(text);
 
       if (args) {
-        let [shortCode, grade] = [
-          // If the first set for normal grades doesn't capture them and it goes to exceptions 2 & 3 then they stay undefined by regex. This accounts for that.
-          ...args.slice(args[1] === undefined && args[2] === undefined ? 3 : 1),
-        ];
-        if (!grade) grade = "N/A";
+        const shortCode = args[2] ?? args[4];
+        const grade = args[3] ?? args[5] ?? undefined;
+        const gId = args[1];
+
+        if (gId && Number(gId)) {
+          const c = [...this.classes.values()][curClass];
+          if (c) {
+            c.assignmentCode = Number(gId);
+          }
+        }
 
         text = text.slice(args.index + args[0].length);
 
-        n++;
+        if (this.classes.size - 1 < curClass) {
+          // This shouldn't ever happen.
 
-        this.log(
-          `Found grade Shortcode: ${shortCode} Grade: ${grade} Current Class: ${curClass}`,
-        );
-
-        if (!this.classGrades.has(this.classNames[curClass])) {
-          this.classGrades.set(this.classNames[curClass], []);
+          this.log(
+            "We have grades for classes that were not foudn by the class regex!",
+          );
+          return n;
         }
+
+        n++;
 
         // If there is no shortcode, then it is a semester exam.
         if (!shortCode) {
           if (prevShortCode && prevShortCode === "Q2") {
             // semester 1 final exam
-            this.classGrades
-              .get(this.classNames[curClass])
-              ?.push({ code: "SE1", grade });
+            [...this.classes.values()][curClass].termGrades.push({
+              term: ShortCode.SE1,
+              grade: Number(grade) ? Number(grade) : undefined,
+            });
           } else {
             // semester 2 final exam
-            this.classGrades
-              .get(this.classNames[curClass])
-              ?.push({ code: "SE2", grade });
+            [...this.classes.values()][curClass]?.termGrades.push({
+              term: ShortCode.SE2,
+              grade: Number(grade) ? Number(grade) : undefined,
+            });
           }
           continue;
         }
 
         // If this code starts with FIN, then that means its the last grade for the class
         if (shortCode === "FIN") {
-          this.classGrades
-            .get(this.classNames[curClass])
-            ?.push({ code: shortCode, grade });
+          [...this.classes.values()][curClass]?.termGrades.push({
+            term: ShortCode.FIN,
+            grade: Number(grade) ? Number(grade) : undefined,
+          });
           curClass++;
         } else {
-          this.classGrades
-            .get(this.classNames[curClass])
-            ?.push({ code: shortCode, grade });
+          [...this.classes.values()][curClass]?.termGrades.push({
+            term: ShortCode[shortCode as keyof typeof ShortCode],
+            grade: Number(grade) ? Number(grade) : undefined,
+          });
         }
 
         prevShortCode = shortCode;
@@ -149,10 +147,74 @@ export default class GradeBookManager {
     return n;
   }
 
+  private stage3(text: string) {
+    let n = 0;
+
+    while (true) {
+      const args = GradeBookManager.ASSIGNMENT_REGEX.exec(text);
+
+      if (args) {
+        const [gId, name, dueDate, shortCode] = args.slice(1);
+        text = text.slice(args.index + args[0].length);
+
+        const grade = this.stage3dot5(args[0]);
+
+        if (grade === "None") {
+          this.log(
+            `No grade was found for the assignment ${name} ${shortCode} ${gId}`,
+          );
+        }
+
+        const match = [...this.classes.values()].find(
+          (c) => c.assignmentCode === Number(gId),
+        );
+
+        if (!match) {
+          this.log(
+            `Assignment found that doesn't have a matching gID (${gId}) ${name} ${shortCode} ${grade}`,
+          );
+          continue;
+        }
+
+        // date format: 09\/07\/2023
+
+        match.assignmentGrades.push({
+          grade: Number(grade) ? Number(grade) : undefined,
+          name,
+          term: ShortCode[shortCode as keyof typeof ShortCode],
+          dueDate: new Date(dueDate.replace("\\/", "-")),
+        });
+        n++;
+      } else {
+        return n;
+      }
+    }
+  }
+
+  /**
+   * Scans the assignment block for a grade.
+   * @param text Entire Assignemnt Block (From <a> to </div>)
+   * @returns The grade, or None if not found
+   */
+  private stage3dot5(text: string): string {
+    while (true) {
+      const match = GradeBookManager.ASSIGNEMNT_GRADE_REGEX.exec(text);
+      if (match) {
+        if (Number(match[1])) return match[1];
+        text = text.slice(match.index + match[0].length);
+      } else {
+        return "None";
+      }
+    }
+  }
+
   private log(message: unknown) {
     if (this.debug) console.log(message);
   }
 
+  /**
+   * Pulls the class name, period, time, and then name (in that order) from the HTML.
+   */
   private static CLASS_REGEX =
     /<a id='\w+' name='\w+' href="javascript:void\(0\)" >([\w &]+)<\/a><\/span><\/td><\/tr><tr><td style="padding-left:10px"><label class="[\w ]+" style="padding-right:3px;width:auto">Period<\/label>(\d)<span class='[\w ]+' style='padding-left:5px;'>([\w -:]+)<\/span><\/td><\/tr><tr><td style="padding-left:10px"><a id='\w+' name='\w+' href="javascript:void\(0\)" >([\w ]+)<\/a><\/td><\/tr><\/table><\/div><\/div>/;
 
@@ -163,11 +225,25 @@ export default class GradeBookManager {
    * If FIN has a grade then it is finished.
    * If there is no shortcode, then it was a final exam for the semester.
    * If there is no grade, then it is a blank spot (Blanks needed for identifying the end of classes)
-   * Order by group: ShortCode Grade (both optional)
-   * Exs. `S1 100`, `S1`, `FIN`, `Q1 100`, `P7 500`
+   * Order by group: gID ShortCode Grade (both optional)
+   * Exs. ` gID P1 100`, `S1`, `FIN`, `Q1 100`, `P7 500`
    *
    * Examples of how to apply these regexs above
    */
   private static GRADE_REGEX =
-    /(?:<a id='\w+' name='\w+' data-sId='\w+' data-eId='\w+' data-cNI='\w+' data-trk='\w+' data-sec='\w+' data-gId='\w+' data-bkt='[\w ]+' data-lit='(\w+)' data-isEoc='\w+' href=\\"javascript:void\(0\)\\" >(\d+)<\\\/a>)|(?:<td {2}style='cursor:pointer' class='fB emptyGrade' id='showGradeInfo' data-sId='\w+' data-eId='\w+' data-cNI='\w+' data-trk='\w+' data-sec='\w+' data-gId='\w+' data-bkt='[\w ]+' data-lit='(\w+)' data-pos='left'><div class='[\w _]+'><\\\/div><\\\/td>)|(?:<div class='\w+'>(\d+)<\\\/div>)/;
+    /(?:<a id='\w+' name='\w+' data-sId='\w+' data-eId='\w+' data-cNI='\w+' data-trk='\w+' data-sec='\w+' data-gId='(\w+)' data-bkt='[\w ]+' data-lit='(\w+)' data-isEoc='\w+' href=\\"javascript:void\(0\)\\" >(\d+)<\\\/a>)|(?:<td {2}style='cursor:pointer' class='fB emptyGrade' id='showGradeInfo' data-sId='\w+' data-eId='\w+' data-cNI='\w+' data-trk='\w+' data-sec='\w+' data-gId='\w+' data-bkt='[\w ]+' data-lit='(\w+)' data-pos='left'><div class='[\w _]+'><\\\/div><\\\/td>)|(?:<div class='\w+'>(\d+)<\\\/div>)/;
+
+  /**
+   * Generic Assignemnt Regex
+   * Captures class gId, assignment name, due date, short code.
+   * To capture the grade, you have to cycle through the input with the below regex:
+   */
+  private static ASSIGNMENT_REGEX =
+    /<a id='showAssignmentInfo' name='showAssignmentInfo' data-sId='\w+' data-gId='(\w+)' data-aId='\w+' data-pos='right' data-type='default' data-maxHeight='550' data-minWidth='400' data-maxWidth='450' data-title='Assignment Details' href=\\"javascript:void\(0\)\\" >([\w ]+)<\\\/a><\\\/br><label class=\\"sf_labelRight aLt fXs fIl aD\\">Due:<\\\/label><span class='fXs fIl'>(\w+\\\/\w+\\\/\w+)&nbsp;&nbsp;\((\w+)\)<\\\/span><\\\/div><\\\/div><\\\/td>"},(?:{"h":"<td class='[\w ]+'><div class='height26 gW_12469_009_all'>(?:&nbsp;|\w+)<\\\/div><\\\/td>"},?)+]/;
+
+  /**
+   * Scans an assignment block for the grade because the place changes depending on term.
+   */
+  private static ASSIGNEMNT_GRADE_REGEX =
+    /<div class='height26 gW_12469_009_all'>(&nbsp;|\w+)<\\\/div>/;
 }

@@ -7,7 +7,7 @@
 - [x] Pull grades
 - [x] Pull classes & schedule
 - [x] Parse out all grade information by class
-- [ ] Pull assignments for each class by term
+- [X] Pull assignments for each class by term
 - [ ] Pull report cards and process them
 - [ ] Calculate GPA
 
@@ -17,28 +17,16 @@
 - Install the package using NPM/yarn: `npm install ccisd-skyward`/`yarn add ccisd-skyward` 
 - Simply instantiate the `SkywardAccountManager` class and call `login`
 
+Just 3 simple lines to pull your grades:
 ```ts
-const account = new SkywardAccountManager(true);
+const account = new SkywardAccountManager(true); // Sets debug to true
 
 console.log(await account.login(email, password)); // AuthObject or Error
 
-const gradebook = await account.pullGradebook();
-
-if (gradebook instanceof GradeBookManager) {
-  console.log(`Here's all of my classes: ${gradebook.classNames.join(", ")}`);
-  console.log(`Here's some info about all of my teachers:`);
-  console.log(
-    [...gradebook.classDetails.values()]
-      .map(
-        (c: Class) =>
-          `I have ${c.name} taught by ${c.teacher} as period ${c.period} during ${c.timeRange}`,
-      )
-      .join("\n"),
-  );
-} else {
-  console.error(gradebook); // Error!
-}
+const gradebook = await account.pullGradebook(); // Returns GradeBookManager Class or Error
 ```
+
+See more in the [GradeBook Example](https://github.com/NicholasCoppola21/ccisd-skyward/blob/0b32ccfc0a7a425a034ff7642b6a8539e76db3b7/src/examples/gradebook.ts).
 
 See the examples directory for code snippets.
 

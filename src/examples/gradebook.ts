@@ -1,5 +1,6 @@
-import GradeBookManager, { type Class } from "../GradeBookManager.js";
+import GradeBookManager from "../GradeBookManager.js";
 import SkywardAccountManager from "../SkywardAccountManager.js";
+import type SkywardClass from "../SkywardClass.js";
 
 const email = process.env.SKYWARD_EMAIL;
 const password = process.env.SKYWARD_PASSWORD;
@@ -13,16 +14,32 @@ const account = new SkywardAccountManager(true); // Sets debug to true
 
 console.log(await account.login(email, password)); // AuthObject or Error
 
-const gradebook = await account.pullGradebook();
+const gradebook = await account.pullGradebook(); // Returns GradeBookManager Class
 
 if (gradebook instanceof GradeBookManager) {
-  console.log(`Here's all of my classes: ${gradebook.classNames.join(", ")}`);
+  console.log(
+    `Here's all of my classes: ${Object.keys(gradebook.classes).join(", ")}`,
+  );
   console.log(`Here's some info about all of my teachers:`);
   console.log(
-    [...gradebook.classDetails.values()]
+    [...gradebook.classes.values()]
       .map(
-        (c: Class) =>
+        (c: SkywardClass) =>
           `I have ${c.name} taught by ${c.teacher} as period ${c.period} during ${c.timeRange}`,
+      )
+      .join("\n"),
+  );
+
+  console.log(`Here's some info about all of my grades:`);
+  console.log(
+    [...gradebook.classes.values()]
+      .map(
+        (c) =>
+          `Term Grades for ${c.name}: ${c.termGrades
+            .map((t) => `${t.term}: ${t.grade ? t.grade : "N/A"}`) // If a grade isn't inserted yet, it will be undefined
+            .join(", ")}\nAssignments: ${c.assignmentGrades
+            .map((a) => `${a.name}: ${a.grade ? a.grade : "N/A"} (${a.term})`) // If a grade isn't inserted yet (*/100), it will be undefined
+            .join(", ")}`,
       )
       .join("\n"),
   );
