@@ -170,6 +170,13 @@ export default class SkywardAccountManager {
 
     const gradeBookRaw = await gradebookRequest.body.text();
 
+    if (
+      gradeBookRaw.includes(
+        `Your session has expired and you have been logged out.`,
+      )
+    )
+      return SkywardError.LOGIN_EXPIRED;
+
     if (raw) return gradeBookRaw;
 
     return new GradeBookManager(gradeBookRaw, this.debug);
@@ -220,6 +227,9 @@ export default class SkywardAccountManager {
     );
 
     const text = await result.body.text();
+
+    if (text.includes(`Your session has expired and you have been logged out.`))
+      return SkywardError.LOGIN_EXPIRED;
 
     if (raw) return text;
 
