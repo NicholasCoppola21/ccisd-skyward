@@ -28,9 +28,7 @@ const gradebook = await account.pullGradebook(); // Returns GradeBookManager Cla
 const attendance = await account.pullAttendance(); // Returns attendance related information
 ```
 
-See more in the [GradeBook Example](https://github.com/NicholasCoppola21/ccisd-skyward/blob/0b32ccfc0a7a425a034ff7642b6a8539e76db3b7/src/examples/gradebook.ts).
-
-See the examples directory for code snippets.
+See more in the [examples](https://github.com/NicholasCoppola21/ccisd-skyward/tree/main/src/examples)!
 
 ## Manual Compilation Guide
 *Note: You need [yarn](https://yarnpkg.com/) for this. I recommend downloading from the link so you get the proper version and not the one off NPM*
