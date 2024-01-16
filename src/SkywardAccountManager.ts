@@ -223,7 +223,7 @@ export default class SkywardAccountManager {
     let copy = text;
 
     while (true) {
-      const args = SkywardAccountManager.MAIN_attendance_REGEX.exec(copy);
+      const args = SkywardAccountManager.MAIN_ATTENDANCE_REGEX.exec(copy);
 
       if (args) {
         copy = copy.slice(args.index + args[0].length);
@@ -255,7 +255,7 @@ export default class SkywardAccountManager {
     copy = text;
 
     while (true) {
-      const args = SkywardAccountManager.attendance_CLASSES_ID.exec(copy);
+      const args = SkywardAccountManager.ATTENDANCE_CLASSES_ID.exec(copy);
 
       if (args) {
         copy = copy.slice(args.index + args[0].length);
@@ -265,7 +265,7 @@ export default class SkywardAccountManager {
 
         while (true) {
           const args1 =
-            SkywardAccountManager.INNER_attendance_CLASSES_REGEX.exec(copy1);
+            SkywardAccountManager.INNER_ATTENDANCE_CLASSES_REGEX.exec(copy1);
 
           if (args1) {
             copy1 = copy1.slice(args1.index + args1[0].length);
@@ -387,7 +387,7 @@ export default class SkywardAccountManager {
    * Date | Reason | Period | Unique ID (For pulling classes)
    * Pull classes using the 2nd (and then 3rd) regexes below
    */
-  private static MAIN_attendance_REGEX =
+  private static MAIN_ATTENDANCE_REGEX =
     /<tr class="(?:odd|even)"><td scope="row" style="white-space:nowrap">([^<]+)<\/td><td>([^<]+)<\/td><td style="white-space:nowrap">([^<]+)<\/td><td><a id='(\w+)' name='\w+' (?:style='white-space:nowrap' )?href="javascript:void\(0\)" >([^<]+)</;
 
   /**
@@ -396,13 +396,13 @@ export default class SkywardAccountManager {
    *
    * Use the INNER_attendance_CLASSES_REGEX to find the classes.
    */
-  private static attendance_CLASSES_ID =
+  private static ATTENDANCE_CLASSES_ID =
     /(?:<a id=\\\w+\\u0027 name=\\\w+\\u0027 href=\\u0022javascript:void\(0\)\\u0022 >[^<]+<\/a>(?:<br \/>)?)+[^#]+#(\w+)/;
 
   /**
    * Finds classes from a class block
    */
-  private static INNER_attendance_CLASSES_REGEX =
+  private static INNER_ATTENDANCE_CLASSES_REGEX =
     /<a id=\\\w+\\u0027 name=\\\w+\\u0027 href=\\u0022javascript:void\(0\)\\u0022 >([^<]+)<\/a>/;
 
   public static isError(val: unknown | SkywardError): val is SkywardError {
