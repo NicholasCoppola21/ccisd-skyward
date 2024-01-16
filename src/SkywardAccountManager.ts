@@ -135,7 +135,9 @@ export default class SkywardAccountManager {
    * Pulls the users' gradebook. You MUST run `login` first or this will fail.
    * @param raw If true will return the raw unmodified HTML
    */
-  public async pullGradebook(): Promise<GradeBookManager | SkywardError> {
+  public async pullGradebook(
+    raw = false,
+  ): Promise<GradeBookManager | string | SkywardError> {
     if (!this.cookie || !this.encses || !this.sessionId)
       return SkywardError.NOT_LOGGED_IN;
     const gradebookRequest = await request(
@@ -168,16 +170,24 @@ export default class SkywardAccountManager {
 
     const gradeBookRaw = await gradebookRequest.body.text();
 
+    if (raw) return gradeBookRaw;
+
     return new GradeBookManager(gradeBookRaw, this.debug);
   }
 
-  public async pullAttendance(): Promise<
+  /**
+   * Pull attendance related information
+   * @param raw If true will return unmodified HTML
+   * @returns Attendance Data, raw HTML if raw is specified, or an error.
+   */
+  public async pullAttendance(raw = false): Promise<
     | {
         date: Date;
         reason: string;
         periods: string;
         classes: string[];
       }[]
+    | string
     | SkywardError
   > {
     if (!this.cookie || !this.encses || !this.sessionId)
@@ -210,6 +220,8 @@ export default class SkywardAccountManager {
     );
 
     const text = await result.body.text();
+
+    if (raw) return text;
 
     const attendance: {
       id: string;
