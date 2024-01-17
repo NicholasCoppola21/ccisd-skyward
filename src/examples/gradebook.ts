@@ -17,7 +17,7 @@ const account = new SkywardAccountManager(true); // Sets debug to true
 
 console.log(await account.login(email, password)); // AuthObject or Error
 
-const gradebook = await account.pullGradebook(); // Returns GradeBookManager Class
+const gradebook = await account.fetchGradebook(); // Returns GradeBookManager Class
 
 if (gradebook instanceof GradeBookManager) {
   console.log(

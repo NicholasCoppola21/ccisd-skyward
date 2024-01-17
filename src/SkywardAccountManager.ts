@@ -18,7 +18,7 @@ export interface AuthObject {
    */
   encses: string;
   /**
-   * Pulled from extra info
+   * Fetched from extra info
    */
   cookie: string;
   /**
@@ -59,8 +59,8 @@ export default class SkywardAccountManager {
     email: string,
     password: string,
   ): Promise<AuthObject | SkywardError> {
-    const hAnon = await this.pullhAnon();
-    const extraInfo = await this.pullExtraInfo(email, password, hAnon);
+    const hAnon = await this.fetchhAnon();
+    const extraInfo = await this.fetchExtraInfo(email, password, hAnon);
 
     if (SkywardAccountManager.isError(extraInfo)) return extraInfo;
 
@@ -132,10 +132,10 @@ export default class SkywardAccountManager {
   }
 
   /**
-   * Pulls the users' gradebook. You MUST run `login` first or this will fail.
+   * Fetchs the users' gradebook. You MUST run `login` first or this will fail.
    * @param raw If true will return the raw unmodified HTML
    */
-  public async pullGradebook(
+  public async fetchGradebook(
     raw = false,
   ): Promise<GradeBookManager | string | SkywardError> {
     if (!this.cookie || !this.encses || !this.sessionId)
@@ -183,11 +183,11 @@ export default class SkywardAccountManager {
   }
 
   /**
-   * Pull attendance related information
+   * Fetch attendance related information
    * @param raw If true will return unmodified HTML
    * @returns Attendance Data, raw HTML if raw is specified, or an error.
    */
-  public async pullAttendance(raw = false): Promise<
+  public async fetchAttendance(raw = false): Promise<
     | {
         date: Date;
         reason: string;
@@ -310,10 +310,10 @@ export default class SkywardAccountManager {
   }
 
   /**
-   * Pulls the hAnon (hidden value sent on each HTML page to track you across requests)
+   * Fetchs the hAnon (hidden value sent on each HTML page to track you across requests)
    * @returns hAnon Text
    */
-  private async pullhAnon(): Promise<string> {
+  private async fetchhAnon(): Promise<string> {
     const prelimHTMLRequest = await request(
       "https://skyward-ccisdprod.iscorp.com/scripts/wsisa.dll/WService=wseduclearcreektx/seplog01.w",
     );
@@ -328,14 +328,14 @@ export default class SkywardAccountManager {
   }
 
   /**
-   * Technically, this pulls the login token information that is sent to the newly opened skyward window normally.
-   * This "extra info" is then used to pull the SessionID and Enceses from the home page on the gradebook home page.
+   * Technically, this fetchs the login token information that is sent to the newly opened skyward window normally.
+   * This "extra info" is then used to fetch the SessionID and Enceses from the home page on the gradebook home page.
    * @param email The email that it logs in with
    * @param password The password that it logs in with
-   * @param hAnon Anonymous tracking token, pull with pullhAnon, likely intended for cross request tracking.
+   * @param hAnon Anonymous tracking token, fetch with fetchhAnon, likely intended for cross request tracking.
    * @returns Extra Info payload
    */
-  private async pullExtraInfo(
+  private async fetchExtraInfo(
     email: string,
     password: string,
     hAnon: string,
@@ -406,8 +406,8 @@ export default class SkywardAccountManager {
 
   /**
    * Finds all absenses in the groups:
-   * Date | Reason | Period | Unique ID (For pulling classes)
-   * Pull classes using the 2nd (and then 3rd) regexes below
+   * Date | Reason | Period | Unique ID (For fetching classes)
+   * Fetch classes using the 2nd (and then 3rd) regexes below
    */
   private static MAIN_ATTENDANCE_REGEX =
     /<tr class="(?:odd|even)"><td scope="row" style="white-space:nowrap">([^<]+)<\/td><td>([^<]+)<\/td><td style="white-space:nowrap">([^<]+)<\/td><td><a id='(\w+)' name='\w+' (?:style='white-space:nowrap' )?href="javascript:void\(0\)" >([^<]+)</;

@@ -213,13 +213,13 @@ export default class GradeBookManager {
   }
 
   /**
-   * Pulls the class name, period, time, and then name (in that order) from the HTML.
+   * Fetchs the class name, period, time, and then name (in that order) from the HTML.
    */
   private static CLASS_REGEX =
     /<a id='\w+' name='\w+' href="javascript:void\(0\)" >([\w &]+)<\/a><\/span><\/td><\/tr><tr><td style="padding-left:10px"><label class="[\w ]+" style="padding-right:3px;width:auto">Period<\/label>(\d)<span class='[\w ]+' style='padding-left:5px;'>([\w -:]+)<\/span><\/td><\/tr><tr><td style="padding-left:10px"><a id='\w+' name='\w+' href="javascript:void\(0\)" >([\w ]+)<\/a><\/td><\/tr><\/table><\/div><\/div>/;
 
   /**
-   * Pulls all grades from the HTML. This includes blank grades. After all matches are found, your data will include every term for a class period and then the next class in that order
+   * Fetchs all grades from the HTML. This includes blank grades. After all matches are found, your data will include every term for a class period and then the next class in that order
    * Currently, this regex does not capture entire class terms.
    * Instead you have to rebuild by using the fact that the grades are finished once you see FIN grade (optional)
    * If FIN has a grade then it is finished.

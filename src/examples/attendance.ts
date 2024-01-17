@@ -15,4 +15,4 @@ const account = new SkywardAccountManager(true); // Sets debug to true
 
 console.log(await account.login(email, password)); // Logs AuthObject or error
 
-console.log(await account.pullAttendance());
+console.log(await account.fetchAttendance());

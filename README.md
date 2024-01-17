@@ -2,14 +2,16 @@
 
 ## This is in a beta state and might not act like you expect it to. Use with caution.
 
+## NOTE: Pre 1.0 releases may include major changes as minor version changes. Expect updates to break code and if needed, pin the version to the latest patch.
+
 ## Goals:
 - [x] Log into Skyward 
-- [x] Pull grades
-- [x] Pull classes & schedule
+- [x] Fetch grades
+- [x] Fetch classes & schedule
 - [x] Parse out all grade information by class
-- [X] Pull assignments for each class by term
-- [x] Pull attendance 
-- [ ] Pull report cards and process them
+- [X] Fetch assignments for each class by term
+- [x] Fetch attendance 
+- [ ] Fetch report cards and process them
 - [ ] Calculate GPA
 
 ## WARNING: Rapid login attempts may block your account. I can not help you if this happens.
@@ -18,14 +20,14 @@
 - Install the package using NPM/yarn: `npm install ccisd-skyward`/`yarn add ccisd-skyward` 
 - Simply instantiate the `SkywardAccountManager` class and call `login`
 
-Just 4 simple lines to pull your grades & attendance:
+Just 4 simple lines to fetch your grades & attendance:
 ```ts
 const account = new SkywardAccountManager(true); // Sets debug to true
 
 console.log(await account.login(email, password)); // AuthObject or Error
 
-const gradebook = await account.pullGradebook(); // Returns GradeBookManager Class or Error
-const attendance = await account.pullAttendance(); // Returns attendance related information
+const gradebook = await account.fetchGradebook(); // Returns GradeBookManager Class or Error
+const attendance = await account.fetchAttendance(); // Returns attendance related information
 ```
 
 See more in the [examples](https://github.com/NicholasCoppola21/ccisd-skyward/tree/main/src/examples)!
