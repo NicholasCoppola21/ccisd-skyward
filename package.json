@@ -1,6 +1,6 @@
 {
   "name": "ccisd-skyward",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "main": "dist/main.js",
   "author": "Nick",
   "repository": {
@@ -24,6 +24,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
+    "pdfreader": "^3.0.2",
     "undici": "^6.3.0"
   },
   "engines": {

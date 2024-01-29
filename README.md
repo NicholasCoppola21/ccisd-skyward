@@ -11,8 +11,10 @@
 - [x] Parse out all grade information by class
 - [X] Fetch assignments for each class by term
 - [x] Fetch attendance 
-- [ ] Fetch report cards and process them
+- [x] Fetch report cards and process them*
 - [ ] Calculate GPA
+
+* Cannot parse progress report cards or STAAR EOC ones.
 
 ## WARNING: Rapid login attempts may block your account. I can not help you if this happens.
 
@@ -20,7 +22,7 @@
 - Install the package using NPM/yarn: `npm install ccisd-skyward`/`yarn add ccisd-skyward` 
 - Simply instantiate the `SkywardAccountManager` class and call `login`
 
-Just 4 simple lines to fetch your grades & attendance:
+Just 5 simple lines to fetch your grades, attendance, and report card:
 ```ts
 const account = new SkywardAccountManager(true); // Sets debug to true
 
@@ -28,6 +30,7 @@ console.log(await account.login(email, password)); // AuthObject or Error
 
 const gradebook = await account.fetchGradebook(); // Returns GradeBookManager Class or Error
 const attendance = await account.fetchAttendance(); // Returns attendance related information
+const reportCard = await account.fetchReportCard("2023 Q4 Report Card"); // Returns your 2023 Q4 Report Card
 ```
 
 See more in the [examples](https://github.com/NicholasCoppola21/ccisd-skyward/tree/main/src/examples)!

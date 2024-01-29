@@ -1,5 +1,17 @@
 import { request } from "undici";
 import GradeBookManager from "./GradeBookManager.js";
+import { setTimeout as sleep } from "timers/promises";
+import { writeFile } from "fs/promises";
+import {
+  parseReportCard,
+  parseReportCardNames,
+  type ReportCard,
+  type ReportCardExtraInfo,
+} from "./parsers/ReportCardParser.js";
+import {
+  parseAttendanceHTML,
+  type AbsentEvent,
+} from "./parsers/AttendanceParser.js";
 
 export enum SkywardError {
   "NOT_LOGGED_IN" = "NOT_LOGGED_IN",
@@ -7,6 +19,9 @@ export enum SkywardError {
   "INVALID_LOGIN_OR_LOCKED" = "INVALID_LOGIN_OR_LOCKED",
   // Not sure why this happens. Usually works after a retry.
   "CANT_CONNECT_TO_SKYWARD" = "CANT_CONNECT_TO_SKYWARD",
+  "INVALID_REPORT_CARD_NAMAE" = "INVALID_REPORT_CARD_NAME",
+  "PDF_FAILED_TO_LOAD" = "PDF_FAILED_TO_LOAD",
+  "REPORTCARD_NOT_SUPPORTED" = "REPORTCARD_NOT_SUPPORTED",
 }
 
 /**
@@ -41,6 +56,11 @@ export default class SkywardAccountManager {
    * Used for session tracking profile requests
    */
   private sessionId?: string;
+
+  /**
+   * Used for keeping track of report card info.
+   */
+  private reportCards = new Map<string, ReportCardExtraInfo>();
 
   /**
    * Manage your skyward account! Must run the `login` method first and then the specific request you want.
@@ -187,16 +207,9 @@ export default class SkywardAccountManager {
    * @param raw If true will return unmodified HTML
    * @returns Attendance Data, raw HTML if raw is specified, or an error.
    */
-  public async fetchAttendance(raw = false): Promise<
-    | {
-        date: Date;
-        reason: string;
-        periods: string;
-        classes: string[];
-      }[]
-    | string
-    | SkywardError
-  > {
+  public async fetchAttendance(
+    raw = false,
+  ): Promise<AbsentEvent[] | string | SkywardError> {
     if (!this.cookie || !this.encses || !this.sessionId)
       return SkywardError.NOT_LOGGED_IN;
     const result = await request(
@@ -233,84 +246,226 @@ export default class SkywardAccountManager {
 
     if (raw) return text;
 
-    const attendance: {
-      id: string;
-      date: Date;
-      periods: string;
-      reason: string;
-      classes: string[];
-    }[] = [];
-
-    // STEP 1: Parse out all absent dates, reasons, and periods.
-    let copy = text;
-
-    while (true) {
-      const args = SkywardAccountManager.MAIN_ATTENDANCE_REGEX.exec(copy);
-
-      if (args) {
-        copy = copy.slice(args.index + args[0].length);
-        const [date, reason, periods, id, classes] = args.slice(1);
-        if (classes === "View Classes") {
-          attendance.push({
-            classes: [],
-            date: new Date(date),
-            id,
-            periods,
-            reason,
-          });
-        } else {
-          attendance.push({
-            classes: [classes],
-            date: new Date(date),
-            id,
-            periods,
-            reason,
-          });
-        }
-      } else {
-        break;
-      }
-    }
-
-    // STEP 2: Parse out all class HTML blocks
-
-    copy = text;
-
-    while (true) {
-      const args = SkywardAccountManager.ATTENDANCE_CLASSES_ID.exec(copy);
-
-      if (args) {
-        copy = copy.slice(args.index + args[0].length);
-        const [id] = args.slice(1);
-
-        let copy1 = args[0];
-
-        while (true) {
-          const args1 =
-            SkywardAccountManager.INNER_ATTENDANCE_CLASSES_REGEX.exec(copy1);
-
-          if (args1) {
-            copy1 = copy1.slice(args1.index + args1[0].length);
-            attendance.find((s) => s.id === id)?.classes.push(args1[1]);
-          } else {
-            break;
-          }
-        }
-      } else {
-        break;
-      }
-    }
-
-    return attendance.map(({ classes, date, periods, reason }) => ({
-      classes,
-      date,
-      periods,
-      reason,
-    }));
+    return parseAttendanceHTML(text);
   }
 
   /**
-   * Fetchs the hAnon (hidden value sent on each HTML page to track you across requests)
+   * Returns a list of report card names.
+   * @param raw - If true will return the raw HTML of the report card page.
+   * @returns A string array of report cards, a string if raw is true, or an error if there was an error
+   */
+  public async fetchReportCardNames(
+    raw = false,
+  ): Promise<string[] | string | SkywardError> {
+    if (!this.sessionId || !this.encses) return SkywardError.NOT_LOGGED_IN;
+
+    const text = await (
+      await request(
+        "https://skyward-ccisdprod.iscorp.com/scripts/wsisa.dll/WService=wseduclearcreektx/sfportfolio.w",
+        {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0",
+            Accept:
+              "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "same-origin",
+            "Sec-Fetch-User": "?1",
+            referrer:
+              "https://skyward-ccisdprod.iscorp.com/scripts/wsisa.dll/WService=wseduclearcreektx/sfhome01.w",
+          },
+
+          body: `sessionid=${this.sessionId}&encses=${this.encses}`,
+          method: "POST",
+        },
+      )
+    ).body.text();
+
+    if (text.includes(`Your session has expired and you have been logged out.`))
+      return SkywardError.LOGIN_EXPIRED;
+
+    if (raw) return text;
+
+    this.reportCards = parseReportCardNames(text);
+
+    this.log(this.reportCards);
+
+    return [...this.reportCards.keys()];
+  }
+
+  /**
+   *
+   * @param name The name of the report card to fetch, can be obtained with fetchReportCardNames
+   * @param raw If true will return the PHP message after putting the report card in the print queue
+   * @param writeToFile If true will write the report card to file
+   * @returns A {ReportCard}, or a string if raw is true, or a {SkywardError}
+   */
+  public async fetchReportCard(
+    name: string,
+    raw = false,
+    writeToFile = false,
+  ): Promise<ReportCard | string | SkywardError> {
+    if (
+      name.toLowerCase().includes("progress") ||
+      name.toLowerCase().includes("staar")
+    ) {
+      this.log(
+        `Progress/STAAR EOC report card formats are not currently supported.`,
+      );
+      return SkywardError.REPORTCARD_NOT_SUPPORTED;
+    }
+    if (this.reportCards.size === 0)
+      // fetchReportCardNames returns a bunch of other hidden ids for the report cards that we need.
+      await this.fetchReportCardNames();
+
+    if (!this.reportCards.has(name))
+      return SkywardError.INVALID_REPORT_CARD_NAMAE;
+
+    if (!this.sessionId || !this.encses) return SkywardError.NOT_LOGGED_IN;
+
+    /**
+     * STAGE 1: ADD THE REPORT CARD TO QUEUE USING INFORMATION GATHERED FROM FETCHREPORTCARDNAMES
+     */
+
+    const { queue_desc, queue_prog, queue_params } =
+      this.reportCards.get(name)!;
+
+    const params = {
+      action: "addToPrintQueue",
+      queue_desc: queue_desc.replaceAll(" ", "+"),
+      queue_prog,
+      queue_params,
+      ishttp: "true",
+      sessionid: this.sessionId,
+      encses: this.encses,
+      requestId: Date.now().toString(),
+    };
+
+    const text = await (
+      await request(
+        "https://skyward-ccisdprod.iscorp.com/scripts/wsisa.dll/WService=wseduclearcreektx/httploader.p?file=sfmainhttp001.w",
+        {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0",
+            Accept: "text/xml",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
+            Cookie: this.cookie,
+            referrer:
+              "https://skyward-ccisdprod.iscorp.com/scripts/wsisa.dll/WService=wseduclearcreektx/sfportfolio.w",
+          },
+          body: Object.entries(params)
+            .map((s) => `${s[0]}=${s[1]}`)
+            .join("&"),
+          method: "POST",
+        },
+      )
+    ).body.text();
+
+    if (text.includes(`Your session has expired and you have been logged out.`))
+      return SkywardError.LOGIN_EXPIRED;
+
+    if (raw) return text;
+
+    /**
+     * STAGE 2: CHECK ON REPORT CARD STATUS AFTER 3 SECONDS AND THEN EVERY 1.5 SECONDS
+     */
+
+    const queue_rowid = text.split("message:'")[1].split("'")[0];
+    const queue_token = text.split("message:'")[2].split("'")[0];
+
+    this.log(queue_rowid);
+    this.log(queue_token);
+
+    await sleep(3500);
+
+    const checkPrintParams = {
+      action: "checkPrintQueue",
+      queue_rowid,
+      queue_token,
+      sessionid: this.sessionId,
+      encses: this.encses,
+      ishttp: true,
+      "javascript.filesAdded":
+        "jquery.1.8.2.js%2Cqsfmain001.css%2Cqsfmain001.min.js",
+      requestId: Date.now().toString(),
+    };
+
+    while (true) {
+      checkPrintParams.requestId = Date.now().toString();
+
+      this.log(`Checking print status..`);
+
+      const printStatus = await (
+        await request(
+          "https://skyward-ccisdprod.iscorp.com/scripts/wsisa.dll/WService=wseduclearcreektx/httploader.p?file=sfmainhttp001.w",
+          {
+            headers: {
+              "User-Agent":
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0",
+              Accept: "*/*",
+              "Accept-Language": "en-US,en;q=0.5",
+              "Content-Type":
+                "application/x-www-form-urlencoded; charset=UTF-8",
+              "X-Requested-With": "XMLHttpRequest",
+              "Sec-Fetch-Dest": "empty",
+              "Sec-Fetch-Mode": "cors",
+              "Sec-Fetch-Site": "same-origin",
+              referrer:
+                "https://skyward-ccisdprod.iscorp.com/scripts/wsisa.dll/WService=wseduclearcreektx/sfportfolio.w",
+            },
+            body: Object.entries(checkPrintParams)
+              .map((s) => `${s[0]}=${s[1]}`)
+              .join("&"),
+            method: "POST",
+          },
+        )
+      ).body.text();
+
+      if (
+        printStatus.includes(
+          `Your session has expired and you have been logged out.`,
+        )
+      )
+        return SkywardError.LOGIN_EXPIRED;
+
+      if (printStatus.includes("message:'C'")) {
+        /**
+         * STAGE 3: DOWNLOAD PDF AND ANALYZE IT
+         */
+
+        this.log(
+          `PDF File link: https://skyward-ccisdprod.iscorp.com/scripts/wsisa.dll/WService=wseduclearcreektx/${
+            printStatus.split("window.open(\\u0027")[1].split("\\u0027")[0]
+          }`,
+        );
+
+        const buffer = await request(
+          `https://skyward-ccisdprod.iscorp.com/scripts/wsisa.dll/WService=wseduclearcreektx/${
+            printStatus.split("window.open(\\u0027")[1].split("\\u0027")[0]
+          }`,
+        ).then((req) => req.body.arrayBuffer());
+
+        if (writeToFile) void writeFile(`${name}.pdf`, Buffer.from(buffer));
+
+        return parseReportCard(name, Buffer.from(buffer));
+      }
+
+      await sleep(1500);
+    }
+  }
+
+  /**
+   * Fetches the hAnon (hidden value sent on each HTML page to track you across requests)
    * @returns hAnon Text
    */
   private async fetchhAnon(): Promise<string> {
@@ -330,6 +485,7 @@ export default class SkywardAccountManager {
   /**
    * Technically, this fetchs the login token information that is sent to the newly opened skyward window normally.
    * This "extra info" is then used to fetch the SessionID and Enceses from the home page on the gradebook home page.
+   * Those 2 params are then used as authentication tokens on every other page.
    * @param email The email that it logs in with
    * @param password The password that it logs in with
    * @param hAnon Anonymous tracking token, fetch with fetchhAnon, likely intended for cross request tracking.
@@ -403,29 +559,6 @@ export default class SkywardAccountManager {
   private log(message: unknown) {
     if (this.debug) console.log(message);
   }
-
-  /**
-   * Finds all absenses in the groups:
-   * Date | Reason | Period | Unique ID (For fetching classes)
-   * Fetch classes using the 2nd (and then 3rd) regexes below
-   */
-  private static MAIN_ATTENDANCE_REGEX =
-    /<tr class="(?:odd|even)"><td scope="row" style="white-space:nowrap">([^<]+)<\/td><td>([^<]+)<\/td><td style="white-space:nowrap">([^<]+)<\/td><td><a id='(\w+)' name='\w+' (?:style='white-space:nowrap' )?href="javascript:void\(0\)" >([^<]+)</;
-
-  /**
-   * Finds the classes block by ID in the groups:
-   * ID
-   *
-   * Use the INNER_attendance_CLASSES_REGEX to find the classes.
-   */
-  private static ATTENDANCE_CLASSES_ID =
-    /(?:<a id=\\\w+\\u0027 name=\\\w+\\u0027 href=\\u0022javascript:void\(0\)\\u0022 >[^<]+<\/a>(?:<br \/>)?)+[^#]+#(\w+)/;
-
-  /**
-   * Finds classes from a class block
-   */
-  private static INNER_ATTENDANCE_CLASSES_REGEX =
-    /<a id=\\\w+\\u0027 name=\\\w+\\u0027 href=\\u0022javascript:void\(0\)\\u0022 >([^<]+)<\/a>/;
 
   public static isError(val: unknown | SkywardError): val is SkywardError {
     return Object.values(SkywardError).includes(val as SkywardError);

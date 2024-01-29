@@ -296,6 +296,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@xmldom/xmldom@npm:^0.8.6":
+  version: 0.8.10
+  resolution: "@xmldom/xmldom@npm:0.8.10"
+  checksum: c7647c442502720182b0d65b17d45d2d95317c1c8c497626fe524bda79b4fb768a9aa4fae2da919f308e7abcff7d67c058b102a9d641097e9a57f0b80187851f
+  languageName: node
+  linkType: hard
+
 "acorn-jsx@npm:^5.3.2":
   version: 5.3.2
   resolution: "acorn-jsx@npm:5.3.2"
@@ -421,6 +428,7 @@ __metadata:
     "@sapphire/eslint-config": "npm:^5.0.1"
     "@sapphire/ts-config": "npm:^4.0.1"
     "@types/node": "npm:^20.4.10"
+    pdfreader: "npm:^3.0.2"
     tsc-watch: "npm:^6.0.4"
     typescript: "npm:^5.1.6"
     undici: "npm:^6.3.0"
@@ -1347,6 +1355,26 @@ __metadata:
   dependencies:
     through: "npm:~2.3"
   checksum: 86f12c64cdaaa8e45ebaca4e39a478e1442db8b4beabc280b545bfaf79c0e2f33c51efb554aace5c069cc441c7b924ba484837b345eaa4ba6fc940d62f826802
+  languageName: node
+  linkType: hard
+
+"pdf2json@npm:3.0.1":
+  version: 3.0.1
+  resolution: "pdf2json@npm:3.0.1"
+  dependencies:
+    "@xmldom/xmldom": "npm:^0.8.6"
+  bin:
+    pdf2json: bin/pdf2json
+  checksum: 7b31c0bdd24cef5633f4c6735cf13af12fa5317ca20c7aa91a6f379a16d41b1918c991a09b422b248e6e66f5b7a74ccc9aa150177d0527b4da9a111646235d3f
+  languageName: node
+  linkType: hard
+
+"pdfreader@npm:^3.0.2":
+  version: 3.0.2
+  resolution: "pdfreader@npm:3.0.2"
+  dependencies:
+    pdf2json: "npm:3.0.1"
+  checksum: dda02d71acd924331e2b69716651e090d08cf6c6db8e8994a7f80def4700dc4257f78a61b89f0e1179360007e6f3e1b751d133a29982e7eefa0d28100fbe0cd7
   languageName: node
   linkType: hard
 
