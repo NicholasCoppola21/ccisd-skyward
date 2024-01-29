@@ -153,11 +153,10 @@ export default class SkywardAccountManager {
 
   /**
    * Fetchs the users' gradebook. You MUST run `login` first or this will fail.
-   * @param raw If true will return the raw unmodified HTML
    */
-  public async fetchGradebook(
-    raw = false,
-  ): Promise<GradeBookManager | string | SkywardError> {
+  public async fetchGradebook(): Promise<
+    GradeBookManager | string | SkywardError
+  > {
     if (!this.cookie || !this.encses || !this.sessionId)
       return SkywardError.NOT_LOGGED_IN;
     const gradebookRequest = await request(
@@ -197,19 +196,14 @@ export default class SkywardAccountManager {
     )
       return SkywardError.LOGIN_EXPIRED;
 
-    if (raw) return gradeBookRaw;
-
     return new GradeBookManager(gradeBookRaw, this.debug);
   }
 
   /**
    * Fetch attendance related information
-   * @param raw If true will return unmodified HTML
-   * @returns Attendance Data, raw HTML if raw is specified, or an error.
+   * @returns Attendance Data, or an error.
    */
-  public async fetchAttendance(
-    raw = false,
-  ): Promise<AbsentEvent[] | string | SkywardError> {
+  public async fetchAttendance(): Promise<AbsentEvent[] | SkywardError> {
     if (!this.cookie || !this.encses || !this.sessionId)
       return SkywardError.NOT_LOGGED_IN;
     const result = await request(
@@ -244,19 +238,14 @@ export default class SkywardAccountManager {
     if (text.includes(`Your session has expired and you have been logged out.`))
       return SkywardError.LOGIN_EXPIRED;
 
-    if (raw) return text;
-
     return parseAttendanceHTML(text);
   }
 
   /**
    * Returns a list of report card names.
-   * @param raw - If true will return the raw HTML of the report card page.
-   * @returns A string array of report cards, a string if raw is true, or an error if there was an error
+   * @returns A string array of report cards, or an error if there was an error
    */
-  public async fetchReportCardNames(
-    raw = false,
-  ): Promise<string[] | string | SkywardError> {
+  public async fetchReportCardNames(): Promise<string[] | SkywardError> {
     if (!this.sessionId || !this.encses) return SkywardError.NOT_LOGGED_IN;
 
     const text = await (
@@ -288,8 +277,6 @@ export default class SkywardAccountManager {
     if (text.includes(`Your session has expired and you have been logged out.`))
       return SkywardError.LOGIN_EXPIRED;
 
-    if (raw) return text;
-
     this.reportCards = parseReportCardNames(text);
 
     this.log(this.reportCards);
@@ -300,15 +287,13 @@ export default class SkywardAccountManager {
   /**
    *
    * @param name The name of the report card to fetch, can be obtained with fetchReportCardNames
-   * @param raw If true will return the PHP message after putting the report card in the print queue
    * @param writeToFile If true will write the report card to file
-   * @returns A {ReportCard}, or a string if raw is true, or a {SkywardError}
+   * @returns A {ReportCard}, or a {SkywardError}
    */
   public async fetchReportCard(
     name: string,
-    raw = false,
     writeToFile = false,
-  ): Promise<ReportCard | string | SkywardError> {
+  ): Promise<ReportCard | SkywardError> {
     if (
       name.toLowerCase().includes("progress") ||
       name.toLowerCase().includes("staar")
@@ -373,8 +358,6 @@ export default class SkywardAccountManager {
 
     if (text.includes(`Your session has expired and you have been logged out.`))
       return SkywardError.LOGIN_EXPIRED;
-
-    if (raw) return text;
 
     /**
      * STAGE 2: CHECK ON REPORT CARD STATUS AFTER 3 SECONDS AND THEN EVERY 1.5 SECONDS
