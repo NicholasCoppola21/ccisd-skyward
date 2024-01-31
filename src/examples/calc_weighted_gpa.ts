@@ -30,6 +30,7 @@
 import { readFile, writeFile } from "fs/promises";
 import SkywardAccountManager from "../SkywardAccountManager.js";
 import type { ReportCard } from "../parsers/ReportCardParser.js";
+import "dotenv/config";
 
 // NOTE: A Q4 report card is the final report card for that year and includes ALL quarters and semesters.
 // For accuracy purposes, do not include 2 report cards from the same school year.
@@ -145,7 +146,7 @@ for (const reportCard of reportCardDatas.values()) {
     const gpa = weight + (avg - 70) * 0.1;
     gpas.push(gpa);
     console.log(
-      `Class: ${rcClass.class} Weight: ${
+      `Class: ${rcClass.class} Level: ${
         weight === 3 ? 1 : 2
       } Average SEM Grade: ${nFormat(avg)} GPA: ${nFormat(gpa)}`,
     );
