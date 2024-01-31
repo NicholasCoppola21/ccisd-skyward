@@ -279,8 +279,6 @@ export default class SkywardAccountManager {
 
     this.reportCards = parseReportCardNames(text);
 
-    this.log(this.reportCards);
-
     return [...this.reportCards.keys()];
   }
 
