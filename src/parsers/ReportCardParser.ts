@@ -1,7 +1,6 @@
 /**
  * Parses report card PDF buffers into a 2d array
  * Accounts for blanks the best it can
- *
  */
 import { PdfReader } from "pdfreader";
 
@@ -105,7 +104,6 @@ export const parsePDFBuffer = async (buffer: Buffer): Promise<string> =>
  * @returns The sorted row of elements with a constant row size of 19 elements.
  */
 export const sortRow = (name: string, row: string[]): string[] => {
-  // Q3-Q4 for spring semester classes will need to be completely rewrote
   const array: string[] = Array(19).fill(0);
   // eslint-disable-next-line
   array[0] = row[0];
