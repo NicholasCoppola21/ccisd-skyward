@@ -1,5 +1,5 @@
 src/
 node_modules
 tsconfig.json
-tsconfig.esline.json
+tsconfig.eslint.json
 .yarn
