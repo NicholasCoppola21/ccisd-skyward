@@ -78,7 +78,7 @@ export const parseReportCardNames = (
 
 const pdfReader = new PdfReader({ debug: true });
 
-export const parsePDFBuffer = async (buffer: Buffer): Promise<string> =>
+const parsePDFBuffer = async (buffer: Buffer): Promise<string> =>
   new Promise((resolve, reject) => {
     let string = "";
     let stop = true;
