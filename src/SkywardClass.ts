@@ -1,4 +1,4 @@
-import { ShortCode } from "./GradeBookManager.js";
+import { ShortCode } from "./parsers/GradeBookParser.js";
 
 export interface TermGrade {
   term: ShortCode;
@@ -12,7 +12,7 @@ export interface AssignmentGrade {
   grade?: number;
 }
 
-export default class SkywadClass {
+export default class SkywardClass {
   public termGrades: TermGrade[] = [];
   public assignmentGrades: AssignmentGrade[] = [];
   public assignmentCode: number = 0;

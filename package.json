@@ -1,6 +1,6 @@
 {
   "name": "ccisd-skyward",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "main": "dist/main.js",
   "author": "Nick",
   "repository": {
@@ -20,6 +20,7 @@
     "@sapphire/eslint-config": "^5.0.1",
     "@sapphire/ts-config": "^4.0.1",
     "@types/node": "^20.4.10",
+    "dotenv": "^16.4.1",
     "tsc-watch": "^6.0.4",
     "typescript": "^5.1.6"
   },

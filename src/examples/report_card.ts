@@ -2,6 +2,7 @@
 // See README.md and .env.example for details.
 // You can use dotenv OR you can pass it in directly with `SKYWARD_EMAIL=email SKYWARD_PASSWORD=password yarn start examples/attendence.js`
 import SkywardAccountManager from "../SkywardAccountManager.js";
+import "dotenv/config.js";
 
 const email = process.env.SKYWARD_EMAIL;
 const password = process.env.SKYWARD_PASSWORD;

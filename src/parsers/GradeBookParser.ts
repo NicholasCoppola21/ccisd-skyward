@@ -1,5 +1,5 @@
 // import type SkywardAccountManager from "./SkywardAccountManager.js";
-import Class from "./SkywardClass.js";
+import Class from "../SkywardClass.js";
 
 /**
  * Every Short Code that can be produced by a gradeset
@@ -102,7 +102,7 @@ export default class GradeBookManager {
           // This shouldn't ever happen.
 
           this.log(
-            "We have grades for classes that were not foudn by the class regex!",
+            "We have grades for classes that were not found by the class regex!",
           );
           return n;
         }

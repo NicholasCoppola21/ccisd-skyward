@@ -4,10 +4,6 @@
  */
 import { PdfReader } from "pdfreader";
 
-export interface ReportCardClass {
-  class: string;
-  terms: ReportCardTerm[];
-}
 // If term is CON then it will be your behavior "grade" for the previous term
 // This will be a string. Otherwise it will be a number
 export interface ReportCardTerm {
@@ -19,6 +15,19 @@ export interface ReportCard {
   name: string;
   classes: ReportCardClass[];
   credits: number;
+}
+
+export interface ReportCardClass {
+  class: string;
+  terms: ReportCardTerm[];
+}
+
+export interface WeightedReportCardClass extends ReportCardClass {
+  level: 1 | 2 | 3;
+}
+
+export interface WeightedReportCard extends ReportCard {
+  classes: WeightedReportCardClass[];
 }
 
 export interface ReportCardExtraInfo {
@@ -221,4 +230,109 @@ export const parseReportCard = async (
       })),
     })),
   };
+};
+
+/**
+ * Transforms the class level to its respective GPA weight offset.
+ */
+export const levelToWeight = {
+  1: 3.0,
+  2: 2.0,
+  3: 0.0,
+};
+
+export const guessLevel = (name: string): 1 | 2 => {
+  if (
+    name.endsWith("AP") ||
+    name.endsWith("APG") ||
+    name.endsWith("H") ||
+    name.split(" ")[name.split(" ").length - 1].startsWith("HO")
+  )
+    return 1;
+  return 2;
+};
+
+/**
+ * Averages an array.
+ * @param array The numerical array to average values from
+ * @returns The average (mean) of the array.
+ */
+export const avgArray = (array: number[]): number =>
+  array.reduce((p, c) => p + c, 0) / array.length;
+
+/**
+ * Calculates the GPA for a speciifc report card term.
+ * @param reportCard - The report card to calculate the GPAs for
+ * @param term - The semester to base it off of (SM1 or SM2)
+ * @param levelFunction - The function to use to get the level for each class, by default uses the exported guessLevel function.
+ *
+ * Note: If you provide a {WeightedReportCard} for reportCard instead of a {ReportCard} it will use the weights in there instead and NOT call the levelFunctino.
+ *
+ * Note: A weight should be a 1,2, or 3 for a level 1,2, or 3 class respectively.
+ *
+ * How this function works:
+ * Calculates the GPA for each class using the formula `offset + (grade - 70) * .1` where offset is the class level weight offset
+ * It then returns the mean value of all of the class GPAs.
+ *
+ * To calculate an overall GPA, you should use this function on each semester for each report card and then average all of them together at the end.
+ *
+ */
+export const calcSemesterGPA = (
+  reportCard: ReportCard | WeightedReportCard,
+  term: "SM1" | "SM2",
+  levelFunction: (name: string) => 1 | 2 | 3 = guessLevel,
+): null | number => {
+  const gpas: number[] = [];
+  for (const rcClass of reportCard.classes) {
+    const rcTerm = rcClass.terms.find((t) => t.term === term);
+    if (!rcTerm || !Number(rcTerm?.grade)) return null;
+
+    const grade = rcTerm.grade as number;
+    if (grade < 70) {
+      gpas.push(0.0);
+      continue;
+    }
+
+    const weight =
+      (rcClass as WeightedReportCardClass).level === undefined
+        ? levelToWeight[levelFunction(rcClass.class)]
+        : (rcClass as WeightedReportCardClass).level;
+
+    gpas.push(weight + (grade - 70) * 0.1);
+  }
+
+  return avgArray(gpas);
+};
+
+/**
+ * Calculates your overall GPA!
+ * @param reportCards The report cards to consider in the GPA Calculation
+ * @param levelFunction The function to use to determine class level. Note: If you use WeightedReportCards instead of ReportCards this function will not be ran.
+ * @returns An object containing the overall GPA and each semester's gpa
+ */
+export const calcGPA = (
+  reportCards: ReportCard[] | WeightedReportCard[],
+  levelFunction: (name: string) => 1 | 2 | 3 = guessLevel,
+): {
+  reportCardGPAs: Map<string, number[]>;
+  overall: number;
+} => {
+  const gpaMap = new Map<string, number[]>();
+  const overall: number[] = [];
+
+  for (const reportCard of reportCards) {
+    const sm1 = calcSemesterGPA(reportCard, "SM1", levelFunction);
+    const sm2 = calcSemesterGPA(reportCard, "SM2", levelFunction);
+
+    if (sm1 !== null) {
+      overall.push(sm1);
+      gpaMap.set(reportCard.name, [sm1]);
+    }
+    if (sm2 !== null) {
+      overall.push(sm2);
+      gpaMap.get(reportCard.name)?.push(sm2);
+    }
+  }
+
+  return { overall: avgArray(overall), reportCardGPAs: gpaMap };
 };

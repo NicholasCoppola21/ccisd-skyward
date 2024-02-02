@@ -12,11 +12,10 @@
 - [X] Fetch assignments for each class by term
 - [x] Fetch attendance 
 - [x] Fetch report cards and process them*
-- [x] Calculate GPA\*\*
+- [x] Calculate GPA
 
 \* Cannot parse progress report cards or STAAR EOC ones.
 
-\*\* Currently only in an [example](https://github.com/NicholasCoppola21/ccisd-skyward/blob/main/src/examples/calc_weighted_gpa.ts). See top of file for explanation.
 ## WARNING: Rapid login attempts may block your account. I can not help you if this happens.
 
 ## Quick Start Guide

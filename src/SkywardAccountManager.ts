@@ -1,5 +1,5 @@
 import { request } from "undici";
-import GradeBookManager from "./GradeBookManager.js";
+import GradeBookManager from "./parsers/GradeBookParser.js";
 import { setTimeout as sleep } from "timers/promises";
 import { writeFile } from "fs/promises";
 import {
@@ -12,6 +12,7 @@ import {
   parseAttendanceHTML,
   type AbsentEvent,
 } from "./parsers/AttendanceParser.js";
+import type SkywardClass from "./SkywardClass.js";
 
 export enum SkywardError {
   "NOT_LOGGED_IN" = "NOT_LOGGED_IN",
@@ -153,9 +154,10 @@ export default class SkywardAccountManager {
 
   /**
    * Fetchs the users' gradebook. You MUST run `login` first or this will fail.
+   * @returns A map of class names with the {SkywardClass}
    */
   public async fetchGradebook(): Promise<
-    GradeBookManager | string | SkywardError
+    Map<string, SkywardClass> | SkywardError
   > {
     if (!this.cookie || !this.encses || !this.sessionId)
       return SkywardError.NOT_LOGGED_IN;
@@ -196,7 +198,7 @@ export default class SkywardAccountManager {
     )
       return SkywardError.LOGIN_EXPIRED;
 
-    return new GradeBookManager(gradeBookRaw, this.debug);
+    return new GradeBookManager(gradeBookRaw, this.debug).classes;
   }
 
   /**

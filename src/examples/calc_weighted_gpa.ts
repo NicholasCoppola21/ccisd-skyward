@@ -29,8 +29,8 @@
 
 import { readFile, writeFile } from "fs/promises";
 import SkywardAccountManager from "../SkywardAccountManager.js";
-import type { ReportCard } from "../parsers/ReportCardParser.js";
-import "dotenv/config";
+import { calcGPA, type ReportCard } from "../parsers/ReportCardParser.js";
+import "dotenv/config.js";
 
 // NOTE: A Q4 report card is the final report card for that year and includes ALL quarters and semesters.
 // For accuracy purposes, do not include 2 report cards from the same school year.
@@ -43,7 +43,18 @@ const reportCardNames = [
 
 const reportCardDatas = new Map<string, ReportCard>();
 
-const nFormat = (n: number): number => Math.floor(n * 100) / 100;
+// const nFormat = (n: number): number => Math.round(n * 1000) / 1000;
+
+// const calcGPATerm = (weight: number, rc: ReportCardTerm) => {
+//   // We filter out stirngs already so this has to be a number
+//   if (typeof rc.grade === "string") return 0;
+//   if (rc.grade < 70) return 0.0;
+
+//   return weight + (rc.grade - 70) * 0.1;
+// };
+
+// const avgArray = (array: number[]): number =>
+//   array.reduce((p, c) => p + c, 0) / array.length;
 
 // automatically tries to use cache to reduce spam, to reset delete the file.
 const file = await readFile("./report_cards.json", "utf-8").catch(() => {});
@@ -98,69 +109,4 @@ if (!file) {
   }
 }
 
-// Attempt to auto assign class levels
-// Logic: If the start of the end ends with an AP or an H (For ex, Intro to Engineering and Design is an honors class that looks like INTR ENG DSN H on a report card) then it's a level 1 class.
-// Anything else is a level 2. This will not always be right but it should be right most of the time, for this reason you should always have a way for users to edit the autoselections.
-
-// Formula =  (semesterGrade - 70) * .1 + level offset
-// (if below 70, you will get a 0.0 regardless of level)
-// level offsets:
-// Level 1: 3.0 (AP/Honors)
-// Level 2: 2.0 (Regular)
-// Level 3: 0.0 (Special Education Modified Courses)
-
-const averages = [];
-
-for (const reportCard of reportCardDatas.values()) {
-  const gpas = [];
-  console.log(reportCard.name);
-
-  for (const rcClass of reportCard.classes) {
-    // Guess the class level
-    let weight: number;
-    // Check if the class ends with AP, APG, or if the ending starts with an H or HO for honors
-    if (
-      rcClass.class.endsWith("AP") ||
-      rcClass.class.endsWith("APG") ||
-      rcClass.class.endsWith("H") ||
-      rcClass.class
-        .split(" ")
-        [rcClass.class.split(" ").length - 1].startsWith("HO")
-    )
-      weight = 3.0;
-    else weight = 2.0;
-
-    // Find the average semester grade
-    const a = rcClass.terms.filter((t) =>
-      reportCard.name.includes("Q3") || reportCard.name.includes("Q4")
-        ? t.term.startsWith("SM")
-        : t.term.startsWith("SM1"),
-    );
-    const avg = a.reduce((p, c) => p + (c.grade as number), 0) / a.length;
-
-    // Calculate GPA and push to array
-    if (avg < 70) {
-      gpas.push(0.0);
-      continue;
-    }
-    const gpa = weight + (avg - 70) * 0.1;
-    gpas.push(gpa);
-    console.log(
-      `Class: ${rcClass.class} Level: ${
-        weight === 3 ? 1 : 2
-      } Average SEM Grade: ${nFormat(avg)} GPA: ${nFormat(gpa)}`,
-    );
-  }
-
-  // Push the average GPA to the array -- this is your GPA for that reportcard term.
-  const aGPA = gpas.reduce((p, c) => p + c, 0) / gpas.length;
-  averages.push(aGPA);
-  console.log(`Average GPA for report card: ${nFormat(aGPA)}`);
-}
-
-// Average the average GPAS for each report card term -- This represents your GPA across the listed report cards.
-console.log(
-  `GPA: ${nFormat(averages.reduce((p, c) => p + c, 0) / averages.length)}`,
-);
-
-// console.log(await account.fetchReportCard("2023 Q4 Report Card")); // Logs your report card!
+console.log(calcGPA([...reportCardDatas.values()]));

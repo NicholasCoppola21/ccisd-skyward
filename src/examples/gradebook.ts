@@ -1,9 +1,10 @@
 // Logs into a skyward account using a .env file in the root directory and prints out a lot of information about your grades.
 // See README.md and .env.example for details.
 // You can use dotenv OR you can pass it in directly with `SKYWARD_EMAIL=email SKYWARD_PASSWORD=password yarn start examples/gradebook.js`
-import GradeBookManager from "../GradeBookManager.js";
+import GradeBookManager from "../parsers/GradeBookParser.js";
 import SkywardAccountManager from "../SkywardAccountManager.js";
 import type SkywardClass from "../SkywardClass.js";
+import "dotenv/config.js";
 
 const email = process.env.SKYWARD_EMAIL;
 const password = process.env.SKYWARD_PASSWORD;
