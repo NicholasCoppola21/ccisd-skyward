@@ -1,9 +1,5 @@
 # Clear Creek ISD Node.JS Skyward Wrapper
 
-## This is in a beta state and might not act like you expect it to. Use with caution.
-
-## NOTE: Pre 1.0 releases may include major changes as minor version changes. Expect updates to break code and if needed, pin the version to the latest patch.
-
 ## Goals:
 - [x] Log into Skyward 
 - [x] Fetch grades
@@ -17,6 +13,9 @@
 \* Cannot parse progress report cards or STAAR EOC ones.
 
 ## WARNING: Rapid login attempts may block your account. I can not help you if this happens.
+
+## A Note on GPA Calculations
+If you're a studeent that is graduation in the **year 2026 or beyond**, electives do NOT count towards GPA. To keep the GPA calculator in this program accurate; you have to **manually remove** these classes from the parsed ReportCard and then pass that to the gpa function. It is **NOT** automatically done.
 
 ## Quick Start Guide
 - Install the package using NPM/yarn: `npm install ccisd-skyward`/`yarn add ccisd-skyward` 
