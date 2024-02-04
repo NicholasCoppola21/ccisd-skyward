@@ -182,7 +182,7 @@ export default class GradeBookManager {
           grade: Number(grade) ? Number(grade) : undefined,
           name,
           term: ShortCode[shortCode as keyof typeof ShortCode],
-          dueDate: new Date(dueDate.replace("\\/", "-")),
+          dueDate: new Date(dueDate.replaceAll("\\/", "-")),
         });
         n++;
       } else {
