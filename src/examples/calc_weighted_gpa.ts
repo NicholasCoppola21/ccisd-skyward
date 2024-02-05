@@ -73,10 +73,12 @@ if (!file) {
 
   console.log(await account.login(email, password)); // Logs AuthObject or error
 
-  const reportCardsList = await account.fetchReportCardNames();
+  const reportCardsList = await account.fetchReportCards();
+
+  if (SkywardAccountManager.isError(reportCardsList)) process.exit();
 
   reportCardNames.forEach((card) => {
-    if (!reportCardsList.includes(card)) {
+    if (!reportCardsList.map((s) => s.name).includes(card)) {
       console.log(
         `${card} is not in the report card list! Check that it is one of these:`,
       );

@@ -16,4 +16,5 @@ const account = new SkywardAccountManager(true); // Sets debug to true
 
 console.log(await account.login(email, password)); // Logs AuthObject or error
 
+console.log(await account.fetchReportCards());
 console.log(await account.fetchReportCard("2023 Q4 Report Card")); // Logs your report card!

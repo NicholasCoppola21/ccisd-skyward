@@ -244,10 +244,12 @@ export default class SkywardAccountManager {
   }
 
   /**
-   * Returns a list of report card names.
+   * Returns a list of report card name and the date they were processed
    * @returns A string array of report cards, or an error if there was an error
    */
-  public async fetchReportCardNames(): Promise<string[] | SkywardError> {
+  public async fetchReportCards(): Promise<
+    { name: string; date: Date }[] | SkywardError
+  > {
     if (!this.sessionId || !this.encses) return SkywardError.NOT_LOGGED_IN;
 
     const text = await (
@@ -281,7 +283,10 @@ export default class SkywardAccountManager {
 
     this.reportCards = parseReportCardNames(text);
 
-    return [...this.reportCards.keys()];
+    return [...this.reportCards.entries()].map((a) => ({
+      name: a[0],
+      date: a[1].date,
+    }));
   }
 
   /**
@@ -305,7 +310,7 @@ export default class SkywardAccountManager {
     }
     if (this.reportCards.size === 0)
       // fetchReportCardNames returns a bunch of other hidden ids for the report cards that we need.
-      await this.fetchReportCardNames();
+      await this.fetchReportCards();
 
     if (!this.reportCards.has(name))
       return SkywardError.INVALID_REPORT_CARD_NAMAE;

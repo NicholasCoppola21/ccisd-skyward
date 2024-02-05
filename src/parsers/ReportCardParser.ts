@@ -2,6 +2,7 @@
  * Parses report card PDF buffers into a 2d array
  * Accounts for blanks the best it can
  */
+import { writeFile } from "fs/promises";
 import { PdfReader } from "pdfreader";
 
 // If term is CON then it will be your behavior "grade" for the previous term
@@ -34,6 +35,7 @@ export interface ReportCardExtraInfo {
   queue_desc: string;
   queue_prog: string;
   queue_params: string;
+  date: Date;
 }
 
 /**
@@ -41,7 +43,7 @@ export interface ReportCardExtraInfo {
  * Groups: ID | Name
  */
 const REPORTCARD_NAME_ID_REGEX =
-  /<a id='(\w+)' name='\w+' href="javascript:void\(0\)" >([^<]+)/;
+  /<a id='(\w+)' name='\w+' href="javascript:void\(0\)" >([^<]+)<\/a><\/td><td>Report Card<\/td><td>([^<]+)/;
 
 /**
  * Finds all of the required data to push a reportcard to queue from the id found with the above regex
@@ -53,17 +55,21 @@ const REPORTCARD_ID_INFO_REGEX =
 export const parseReportCardNames = (
   text: string,
 ): Map<string, ReportCardExtraInfo> => {
-  const idToName = new Map<string, string>();
+  const idToNameDate = new Map<string, { name: string; date: Date }>();
   const reportCards = new Map<string, ReportCardExtraInfo>();
-
+  void writeFile("test.html", text);
   for (
     let input = text, match = REPORTCARD_NAME_ID_REGEX.exec(input);
     match;
     input = input.slice(match.index + match[0].length),
       match = REPORTCARD_NAME_ID_REGEX.exec(input)
   ) {
-    const [id, name] = match.slice(1);
-    idToName.set(id, name);
+    const [id, name, date] = match.slice(1);
+    idToNameDate.set(id, {
+      name,
+      // date parser won't parse terms like "6:33pm" so we have to remove them
+      date: new Date(date.split(" ").slice(0, -1).join(" ")),
+    });
   }
 
   for (
@@ -73,11 +79,12 @@ export const parseReportCardNames = (
       match = REPORTCARD_ID_INFO_REGEX.exec(input)
   ) {
     const [queue_desc, queue_prog, queue_params, ref_id] = match.slice(1);
-    if (idToName.has(ref_id)) {
-      reportCards.set(idToName.get(ref_id)!, {
+    if (idToNameDate.has(ref_id)) {
+      reportCards.set(idToNameDate.get(ref_id)!.name, {
         queue_desc,
         queue_params,
         queue_prog,
+        date: idToNameDate.get(ref_id)!.date,
       });
     }
   }
