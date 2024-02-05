@@ -3,3 +3,4 @@ node_modules
 tsconfig.json
 tsconfig.eslint.json
 .yarn
+.env
