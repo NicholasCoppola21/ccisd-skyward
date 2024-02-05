@@ -238,7 +238,7 @@ export default class GradeBookManager {
    * To capture the grade, you have to cycle through the input with the below regex:
    */
   private static ASSIGNMENT_REGEX =
-    /<a id='showAssignmentInfo' name='showAssignmentInfo' data-sId='\w+' data-gId='(\w+)' data-aId='\w+' data-pos='right' data-type='default' data-maxHeight='550' data-minWidth='400' data-maxWidth='450' data-title='Assignment Details' href=\\"javascript:void\(0\)\\" >([\w ]+)<\\\/a><\\\/br><label class=\\"sf_labelRight aLt fXs fIl aD\\">Due:<\\\/label><span class='fXs fIl'>(\w+\\\/\w+\\\/\w+)&nbsp;&nbsp;\((\w+)\)<\\\/span><\\\/div><\\\/div><\\\/td>"},(?:{"h":"<td class='[\w ]+'><div class='height26 gW_12469_009_all'>(?:&nbsp;|\w+)<\\\/div><\\\/td>"},?)+]/;
+    /<a id='showAssignmentInfo' name='showAssignmentInfo' data-sId='\w+' data-gId='(\w+)' data-aId='\w+' data-pos='right' data-type='default' data-maxHeight='550' data-minWidth='400' data-maxWidth='450' data-title='Assignment Details' href=\\"javascript:void\(0\)\\" >([^<]+)<\\\/a><\\\/br><label class=\\"sf_labelRight aLt fXs fIl aD\\">Due:<\\\/label><span class='fXs fIl'>(\w+\\\/\w+\\\/\w+)&nbsp;&nbsp;\((\w+)\)<\\\/span><\\\/div><\\\/div><\\\/td>"},(?:{"h":"<td class='[\w ]+'><div class='height26 gW_12469_009_all'>(?:&nbsp;|\w+)<\\\/div><\\\/td>"},?)+]/;
 
   /**
    * Scans an assignment block for the grade because the place changes depending on term.
