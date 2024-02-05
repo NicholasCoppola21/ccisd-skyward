@@ -250,8 +250,8 @@ export const levelToWeight = {
 
 export const guessLevel = (name: string): 1 | 2 => {
   if (
-    name.endsWith("AP") ||
-    name.endsWith("APG") ||
+    name.split(" ")[name.split(" ").length - 1].startsWith("AP") ||
+    name.endsWith("AA") ||
     name.endsWith("H") ||
     name.split(" ")[name.split(" ").length - 1].startsWith("HO")
   )
