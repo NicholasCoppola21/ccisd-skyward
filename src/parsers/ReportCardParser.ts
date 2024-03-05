@@ -2,7 +2,6 @@
  * Parses report card PDF buffers into a 2d array
  * Accounts for blanks the best it can
  */
-import { writeFile } from "fs/promises";
 import { PdfReader } from "pdfreader";
 
 // If term is CON then it will be your behavior "grade" for the previous term
@@ -57,7 +56,6 @@ export const parseReportCardNames = (
 ): Map<string, ReportCardExtraInfo> => {
   const idToNameDate = new Map<string, { name: string; date: Date }>();
   const reportCards = new Map<string, ReportCardExtraInfo>();
-  void writeFile("test.html", text);
   for (
     let input = text, match = REPORTCARD_NAME_ID_REGEX.exec(input);
     match;
@@ -102,6 +100,7 @@ const parsePDFBuffer = async (buffer: Buffer): Promise<string> =>
       if (error) return reject(error);
       if (data && data.text) {
         if (data.text.includes("Comments:")) {
+          console.log(string);
           return resolve(string);
         }
         if (data.text.includes("Course")) {
